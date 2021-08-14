@@ -1,0 +1,2 @@
+profile_proto:
+	protoc --go_out=plugins=grpc:. profile/api/proto/profile.proto

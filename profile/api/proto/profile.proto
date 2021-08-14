@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "profile/api/proto";
+
+service Profile {
+  rpc PurchasePermission(PurchasePermissionRequest) returns (PurchasePermissionResponse);
+}
+
+message PurchasePermissionRequest {
+  string user_cell_phone = 1;
+  PurchaseType purchase_type = 2;
+
+  enum PurchaseType {
+    None = 0;
+    ByCart = 1;
+    ByWallet = 2;
+    ByCredit = 3;
+  }
+}
+
+message PurchasePermissionResponse {
+  bool permission = 1;
+}
