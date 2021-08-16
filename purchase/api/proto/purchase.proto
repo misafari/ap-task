@@ -4,11 +4,25 @@ option go_package = "purchase/api/proto";
 
 service Purchase {
   rpc PayByCart(PayByCartRequest) returns (PurchaseResponse);
+  rpc PayByWallet(PayByWalletRequest) returns (PurchaseResponse);
+  rpc PayByCredit(PayByCreditRequest) returns (PurchaseResponse);
 }
 
 message PayByCartRequest {
   string user_phone_no = 1;
   string cart_number = 2;
+  int32 amount = 3;
+}
+
+message PayByWalletRequest {
+  string user_phone_no = 1;
+  string wallet_number = 2;
+  int32 amount = 3;
+}
+
+message PayByCreditRequest {
+  string user_phone_no = 1;
+  string credit_id = 2;
   int32 amount = 3;
 }
 

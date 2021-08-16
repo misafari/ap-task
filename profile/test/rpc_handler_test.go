@@ -4,34 +4,16 @@ import (
 	"asanpardakht/profile/api/proto"
 	"asanpardakht/profile/api/rpc_handler"
 	"context"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/test/bufconn"
-	"log"
 	"net"
 	"testing"
 )
 
-const bufSize = 1024 * 1024
-
-var lis *bufconn.Listener
-
-func init() {
-	lis = bufconn.Listen(bufSize)
-	s := grpc.NewServer()
-	serverImpl := rpc_handler.NewProfileServer()
-	proto.RegisterProfileServer(s, serverImpl)
-
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Server exited with error: %v", err)
-		}
-	}()
-}
-
-func bufDialer(context.Context, string) (net.Conn, error) {
-	return lis.Dial()
-}
+const (
+	FakeProfileServicePort = 60062
+)
 
 func TestPurchasePermission_GoodGuy(t *testing.T) {
 	type arg struct {
@@ -42,7 +24,7 @@ func TestPurchasePermission_GoodGuy(t *testing.T) {
 	tests := []struct {
 		name string
 		arg
-		errorMessage string
+		errorMessage proto.PurchasePermissionResponse_PurchasePermissionResponseError
 	}{
 		{
 			name: "success",
@@ -50,7 +32,7 @@ func TestPurchasePermission_GoodGuy(t *testing.T) {
 				cellPhone:    "09387207022",
 				purchaseType: proto.PurchasePermissionRequest_ByWallet,
 			},
-			errorMessage: "",
+			errorMessage: proto.PurchasePermissionResponse_None,
 		},
 		{
 			name: "cell phone is required",
@@ -58,7 +40,7 @@ func TestPurchasePermission_GoodGuy(t *testing.T) {
 				cellPhone:    "",
 				purchaseType: proto.PurchasePermissionRequest_ByWallet,
 			},
-			errorMessage: "rpc error: code = Unknown desc = user cell phone is required",
+			errorMessage: proto.PurchasePermissionResponse_UserPhoneValidation,
 		},
 		{
 			name: "purchase type is required",
@@ -66,30 +48,49 @@ func TestPurchasePermission_GoodGuy(t *testing.T) {
 				cellPhone:    "09387207022",
 				purchaseType: proto.PurchasePermissionRequest_None,
 			},
-			errorMessage: "rpc error: code = Unknown desc = purchase type is required",
+			errorMessage: proto.PurchasePermissionResponse_PurchaseTypeValidation,
 		},
 	}
 
+	client, closeFns := runFakeProfileService()
+	defer closeFns()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
-			if err != nil {
-				t.Fatalf("Failed to dial bufnet: %v", err)
-			}
-			defer conn.Close()
-			client := proto.NewProfileClient(conn)
-			resp, err := client.PurchasePermission(ctx, &proto.PurchasePermissionRequest{
+			resp, err := client.PurchasePermission(context.Background(), &proto.PurchasePermissionRequest{
 				UserCellPhone: tt.arg.cellPhone,
 				PurchaseType:  tt.arg.purchaseType,
 			})
-			if tt.errorMessage == "" {
-				assert.Nil(t, err)
-				assert.NotNil(t, resp)
-			} else {
-				assert.Equal(t, tt.errorMessage, err.Error())
-				assert.Nil(t, resp)
-			}
+			assert.Nil(t, err)
+			assert.NotNil(t, resp)
+			assert.Equal(t, tt.errorMessage, resp.Error)
 		})
 	}
+}
+
+func runFakeProfileService() (proto.ProfileClient, func()) {
+	serverImpl := rpc_handler.NewProfileServer()
+	server := grpc.NewServer()
+	proto.RegisterProfileServer(server, serverImpl)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", FakeProfileServicePort))
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		if err := server.Serve(lis); err != nil {
+			panic(err)
+		}
+	}()
+
+	conn, err := grpc.Dial(fmt.Sprintf(":%d", FakeProfileServicePort), grpc.WithInsecure())
+	if err != nil {
+		panic(err)
+	}
+
+	var closeFn = func() {
+		conn.Close()
+		server.Stop()
+	}
+
+	return proto.NewProfileClient(conn), closeFn
 }

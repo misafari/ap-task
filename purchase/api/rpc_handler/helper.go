@@ -11,6 +11,14 @@ func PayByCartIncomeValidation(in *proto.PayByCartRequest) bool {
 		in.GetAmount() != 0 && CartNumberValidation(in.GetCartNumber())
 }
 
+func PayByWalletIncomeValidation(in *proto.PayByWalletRequest) bool {
+	return in.GetWalletNumber() != "" && in.GetUserPhoneNo() != "" && in.GetAmount() != 0
+}
+
+func PayByCreditIncomeValidation(in *proto.PayByCreditRequest) bool {
+	return in.GetCreditId() != "" && in.GetUserPhoneNo() != "" && in.GetAmount() != 0
+}
+
 func CartNumberValidation(cardNumber string) bool {
 	return len(cardNumber) == 16
 }
