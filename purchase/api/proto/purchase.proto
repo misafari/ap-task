@@ -1,0 +1,26 @@
+syntax = "proto3";
+package proto;
+option go_package = "purchase/api/proto";
+
+service Purchase {
+  rpc PayByCart(PayByCartRequest) returns (PurchaseResponse);
+}
+
+message PayByCartRequest {
+  string user_phone_no = 1;
+  string cart_number = 2;
+  int32 amount = 3;
+}
+
+message PurchaseResponse {
+  string user_phone_no = 1;
+  Error error = 2;
+
+  enum Error {
+    None = 0;
+    Info = 1;
+    Credit = 2;
+    Permission = 3;
+    Unknown = 4;
+  }
+}

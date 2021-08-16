@@ -21,5 +21,12 @@ message PurchasePermissionRequest {
 }
 
 message PurchasePermissionResponse {
+  PurchasePermissionResponseError error = 2;
   bool permission = 1;
+
+  enum PurchasePermissionResponseError {
+    None = 0;
+    UserPhoneValidation = 1;
+    PurchaseTypeValidation = 2;
+  }
 }

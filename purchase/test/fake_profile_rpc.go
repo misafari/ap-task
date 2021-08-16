@@ -1,4 +1,4 @@
-package rpc_handler
+package test
 
 import (
 	"asanpardakht/profile/api/proto"
@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-type ProfileService struct{}
+type FakeProfileService struct{}
 
-func (p *ProfileService) PurchasePermission(_ context.Context, request *proto.PurchasePermissionRequest) (*proto.PurchasePermissionResponse, error) {
+func (p *FakeProfileService) PurchasePermission(_ context.Context, request *proto.PurchasePermissionRequest) (*proto.PurchasePermissionResponse, error) {
 	if request.GetUserCellPhone() == "" {
 		return &proto.PurchasePermissionResponse{
 			Error:      proto.PurchasePermissionResponse_UserPhoneValidation,
@@ -32,8 +32,4 @@ func (p *ProfileService) PurchasePermission(_ context.Context, request *proto.Pu
 	return &proto.PurchasePermissionResponse{
 		Permission: per,
 	}, nil
-}
-
-func NewProfileServer() *ProfileService {
-	return &ProfileService{}
 }

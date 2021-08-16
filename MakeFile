@@ -1,2 +1,3 @@
-profile_proto:
-	protoc --go_out=plugins=grpc:. profile/api/proto/profile.proto
+proto:
+	protoc --go_out=plugins=grpc:. profile/api/proto/profile.proto && \
+	 protoc --go_out=plugins=grpc:. purchase/api/proto/purchase.proto
