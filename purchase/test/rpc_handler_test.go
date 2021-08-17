@@ -58,9 +58,6 @@ func TestPayByCart_GoodGuy(t *testing.T) {
 		},
 	}
 
-	client, closeFns := runPurchaseRpc()
-	defer closeFns()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, err := client.PayByCart(context.Background(), &proto.PayByCartRequest{
@@ -129,9 +126,6 @@ func TestPayByWallet_GoodGuy(t *testing.T) {
 		},
 	}
 
-	client, closeFns := runPurchaseRpc()
-	defer closeFns()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, err := client.PayByWallet(context.Background(), &proto.PayByWalletRequest{
@@ -199,9 +193,6 @@ func TestPayByCredit_GoodGuy(t *testing.T) {
 			errorMessage: 0,
 		},
 	}
-
-	client, closeFns := runPurchaseRpc()
-	defer closeFns()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

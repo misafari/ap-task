@@ -2,12 +2,8 @@ package test
 
 import (
 	"asanpardakht/profile/api/proto"
-	"asanpardakht/profile/api/rpc_handler"
 	"context"
-	"fmt"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"net"
 	"testing"
 )
 
@@ -52,9 +48,6 @@ func TestPurchasePermission_GoodGuy(t *testing.T) {
 		},
 	}
 
-	client, closeFns := runFakeProfileService()
-	defer closeFns()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, err := client.PurchasePermission(context.Background(), &proto.PurchasePermissionRequest{
@@ -66,31 +59,4 @@ func TestPurchasePermission_GoodGuy(t *testing.T) {
 			assert.Equal(t, tt.errorMessage, resp.Error)
 		})
 	}
-}
-
-func runFakeProfileService() (proto.ProfileClient, func()) {
-	serverImpl := rpc_handler.NewProfileServer()
-	server := grpc.NewServer()
-	proto.RegisterProfileServer(server, serverImpl)
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", FakeProfileServicePort))
-	if err != nil {
-		panic(err)
-	}
-	go func() {
-		if err := server.Serve(lis); err != nil {
-			panic(err)
-		}
-	}()
-
-	conn, err := grpc.Dial(fmt.Sprintf(":%d", FakeProfileServicePort), grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
-
-	var closeFn = func() {
-		conn.Close()
-		server.Stop()
-	}
-
-	return proto.NewProfileClient(conn), closeFn
 }
