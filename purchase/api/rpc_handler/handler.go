@@ -4,36 +4,41 @@ import (
 	profileProto "asanpardakht/profile/api/proto"
 	"asanpardakht/purchase/api/proto"
 	"context"
+	"time"
 )
 
 type PurchaseService struct {
 	profileClient profileProto.ProfileClient
+	deadline      time.Time
 }
 
-func NewPurchaseService(profileClient profileProto.ProfileClient) *PurchaseService {
+const (
+	PayByCartRequestKey = "PayByCartRequestKey"
+)
+
+func NewPurchaseService(profileClient profileProto.ProfileClient, deadline time.Time) *PurchaseService {
 	return &PurchaseService{
+		deadline:      deadline,
 		profileClient: profileClient,
 	}
 }
 
 func (p *PurchaseService) PayByCart(ctx context.Context, in *proto.PayByCartRequest) (*proto.PurchaseResponse, error) {
-	if permissionDenied := p.checkPermission(ctx, in.GetUserPhoneNo(), profileProto.PurchasePermissionRequest_ByCart); permissionDenied != nil {
-		return permissionDenied, nil
-	}
+	ctx, cancel := context.WithDeadline(ctx, p.deadline)
+	ctx = context.WithValue(ctx, PayByCartRequestKey, in)
+	defer cancel()
 
-	if !PayByCartIncomeValidation(in) {
+	ch := p.ByCartProcess(ctx)
+
+	select {
+	case <-ctx.Done():
 		return &proto.PurchaseResponse{
 			UserPhoneNo: in.GetUserPhoneNo(),
-			Error:       proto.PurchaseResponse_Info,
+			Error:       proto.PurchaseResponse_TimeOut,
 		}, nil
+	case r := <-ch:
+		return r, nil
 	}
-
-	resp := &proto.PurchaseResponse{
-		UserPhoneNo: in.GetUserPhoneNo(),
-		Error:       MakeFakeDecision(),
-	}
-
-	return resp, nil
 }
 
 func (p *PurchaseService) PayByWallet(ctx context.Context, in *proto.PayByWalletRequest) (*proto.PurchaseResponse, error) {
@@ -74,27 +79,4 @@ func (p *PurchaseService) PayByCredit(ctx context.Context, in *proto.PayByCredit
 	}
 
 	return resp, nil
-}
-
-func (p *PurchaseService) checkPermission(ctx context.Context, cellPhoneNumber string, purchaseType profileProto.PurchasePermissionRequest_PurchaseType) *proto.PurchaseResponse {
-	profileResponse, err := p.profileClient.PurchasePermission(ctx, &profileProto.PurchasePermissionRequest{
-		UserCellPhone: cellPhoneNumber,
-		PurchaseType:  purchaseType,
-	})
-	if err != nil {
-		// log err
-		return &proto.PurchaseResponse{
-			UserPhoneNo: cellPhoneNumber,
-			Error:       proto.PurchaseResponse_Unknown,
-		}
-	}
-
-	if !profileResponse.Permission {
-		return &proto.PurchaseResponse{
-			UserPhoneNo: cellPhoneNumber,
-			Error:       proto.PurchaseResponse_Permission,
-		}
-	}
-
-	return nil
 }
