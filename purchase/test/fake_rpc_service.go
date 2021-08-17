@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"net"
+	"time"
 )
 
 const (
@@ -52,7 +53,7 @@ func runFakeProfileService() (profileProto.ProfileClient, func()) {
 
 func runPurchaseRpc() (purchaseProto.PurchaseClient, func()) {
 	profileRpcClient, profileRpcClientCloseFn := runFakeProfileService()
-	serverImpl := rpc_handler.NewPurchaseService(profileRpcClient)
+	serverImpl := rpc_handler.NewPurchaseService(profileRpcClient, 2*time.Second)
 	server := grpc.NewServer()
 	purchaseProto.RegisterPurchaseServer(server, serverImpl)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", FakePurchaseServicePort))

@@ -9,14 +9,14 @@ import (
 
 type PurchaseService struct {
 	profileClient profileProto.ProfileClient
-	deadline      time.Time
+	deadline      time.Duration
 }
 
 const (
 	PayByCartRequestKey = "PayByCartRequestKey"
 )
 
-func NewPurchaseService(profileClient profileProto.ProfileClient, deadline time.Time) *PurchaseService {
+func NewPurchaseService(profileClient profileProto.ProfileClient, deadline time.Duration) *PurchaseService {
 	return &PurchaseService{
 		deadline:      deadline,
 		profileClient: profileClient,
@@ -24,7 +24,7 @@ func NewPurchaseService(profileClient profileProto.ProfileClient, deadline time.
 }
 
 func (p *PurchaseService) PayByCart(ctx context.Context, in *proto.PayByCartRequest) (*proto.PurchaseResponse, error) {
-	ctx, cancel := context.WithDeadline(ctx, p.deadline)
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(p.deadline))
 	ctx = context.WithValue(ctx, PayByCartRequestKey, in)
 	defer cancel()
 
